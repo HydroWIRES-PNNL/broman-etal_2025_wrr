@@ -40,7 +40,7 @@ The experiment files (resulting from the analysis scripts listed below) are are 
 | FIScH |  v0.4.0  | https://github.com/HydroWIRES-PNNL/fisch | NA |
 | GO-WEST |  XX   | https://github.com/romulus97/IM3-GO-WEST | XX |
 | hydrofixr | NA | https://github.com/pnnl/hydrofixr/tree/master | NA|
-| starfit | NA | https://github.com/IMMM-SFA/starfit | NA |
+| starfit | v0.1.0 | https://github.com/IMMM-SFA/starfit | NA |
 
 
 ## Reproduce my analysis
