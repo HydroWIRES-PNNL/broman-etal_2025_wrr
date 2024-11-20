@@ -30,7 +30,7 @@ The experiment files (resulting from the analysis scripts listed below) are are 
 
 |       Dataset       |                  DOI                   |
 |:-------------------:|:-----------------------------------------------------------------------------:|
-| FIScH Simulations |  XXX |
+| FIScH Simulations |  https://doi.org/10.5281/zenodo.14052614 |
 
 
 ## Contributing modeling software
