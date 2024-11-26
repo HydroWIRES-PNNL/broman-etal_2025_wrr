@@ -454,8 +454,7 @@ ewf_tbl = all_targets %>%
 
 write_csv(ewf_tbl, 'data/input_data/starfit_reservoirtargets/plant_energy-water-fact_tbl.csv')
 
-# data with storage targets for ror
-
+# data with storage targets for ror - 
 all_targets %>%
   mutate(year = year(week_commencing)) %>%
   filter(type == 'RoR/small storage', year >= 2000) ->
@@ -476,7 +475,7 @@ ror_maxvol = ror_plant_data %>%
   dplyr::select(EIA_ID, MaxVol)
 
 # compute storage targets for ROR - assume full storage at start of simulation
-boundary_conditions_ror = boundary_conditions %>%
+boundary_conditions_ror = all_targets %>%
   dplyr::filter(type == 'RoR/small storage') %>%
   left_join(ror_maxvol) %>%
   dplyr::filter(!is.na(MaxVol))
@@ -492,14 +491,12 @@ for(f in 1:length(eia_id_list)){
   for(w in 1:length(week_list)){
     week_sel = week_list[w]
     
-    # storage[t-1] - (MWh / MWh_per_MCM_release) + inflow
-    # compute 'storage target' for ROR
     if(week_sel == week_list[1]){
       storage_p = boundary_conditions_ror_fl %>%
         filter(week_commencing == week_sel) %>% pull(MaxVol) * 0.75
     } else {
       storage_p = boundary_conditions_ror_fl %>%
-        filter(week_commencing == week_sel_p) %>% pull(storage)
+        filter(week_commencing == week_sel) %>% pull(storage)
     }
     storage_max = pull(dplyr::filter(boundary_conditions_ror_fl, week_commencing == week_sel), MaxVol)
     storage_delta = pull(dplyr::filter(boundary_conditions_ror_fl, week_commencing == week_sel), MWh) /
