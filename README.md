@@ -22,8 +22,7 @@ Hydropower facilities represent a key electricity generating resource in the U.S
 |              Dataset              |                                   DOI                                    |
 |:---------------------------------:|:------------------------------------------------------------------------:|
 |  mosartwmpy managed river flow simulations  | https://doi.org/10.5281/zenodo.13923721                        |
-|  Existing Hydropower Assets (EHA) Plant Database, 2022  | https://doi.org/10.21951/EHA_FY2022/1865282 |
-|  Hydropower Infrastructure – LAkes, Reservoirs, and RIvers (HILARRI) v1.1.0  | https://doi.org/10.21951/HILARRI/1781642 |
+
 
 ### Output data
 The experiment files (resulting from the analysis scripts listed below) are are available at the following DOI.
@@ -56,12 +55,17 @@ To complete the analysis end to end, run the following scripts:
 | Data preparation | 1_create_inflow_timeseries.R | Reads in mosartwmpy simulated streanflow and creates an inflow timeseries for each hydropower facility used in this experiment. These inflows are used to represent perfect inflow forecasts |
 | Data preparation | 2_run_starfit-hydrofixr.R | Uses ISTARF data-driven reservoir operating rules and hydrofixr hydropower generation methods to derive weekly reservoir storage targets and weekly power factors |
 | Data preparation | 3_map_lmps_to_facilities.R  | Maps GO-WEST locational marginal prices (LMPs) provided by bus (node) to each hydropower facility |
-
+| Data analysis | 4a_run_fisch_ror.R  | Runs hydropower scheduler for run-of-river hydropower facilities; code runs one facility at a time for all three forecast types |
+| Data analysis | 4b_run_fisch_storage.R  | Runs hydropower scheduler for storage hydropower facilities; code runs one facility at a time for all three forecast types |
 
 
 ## Reproduce my figures
-Use the following scripts to reproduce the figures in this publication.
+Use the following scripts to reproduce the figures in this publication. Data analysis is performed in these scripts using data from FIScH.
 
-| Figure Numbers |                Script Name                 |                                  Description                                   | 
+| Figure Number |                Script Name                 |                                  Description                                   | 
 |:--------------:|:------------------------------------------:|:------------------------------------------------------------------------------:|
-| 1 | XX | XX |
+| 1 | NA | Overview of modeling experiment design |
+| 2 | NA | Flow chart showing data flow through each model |
+| 3 | f3_plot_hydropower_facility_map.R | Map of hydropower facilities used in experiment by nameplate capacity and operation type |
+| 4 | NA | Topology of full 10,000 node GO-WEST model and reduced 100 node model provided by NC State University |
+| 5-7 | f4-7_plot_revenue_change.R | Revenue difference for revenue produced by hydropower schedules using different inflow forecasts |

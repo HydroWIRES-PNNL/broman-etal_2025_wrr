@@ -1,5 +1,5 @@
 # ----
-# Name: get targets.R
+# Name: run_starfit-hydrofixr.R
 # Author: S. Turner, PNNL
 # Modified: D. Broman, PNNL
 # Last Modified: 2023-08-21
@@ -20,7 +20,7 @@ library(starfit)
 library(hydrofixr)
 library(aweek)
 
-all_inflows_raw = read_csv('data/input/forecast_perfect.csv')
+all_inflows_raw = read_csv('data/input_data/perfect_forecasts/forecast_perfect.csv')
 
 # create one year of spin-up (fake 1999 by repeating 2000)
 all_inflows_inityear = all_inflows_raw %>%
@@ -41,7 +41,6 @@ read_csv('data/input_data/hydrosource/HydroSource_HYC.csv') %>%
 
 read_csv('data/input_data/hydrosource/HILARRI_v1_1_Public.csv') %>%
   select(GRAND_ID = grand_id, pt_name, eha_ptid, nididfull, nidid) %>%
-  #filter(!is.na(GRAND_ID)) %>%
   filter(!is.na(eha_ptid)) %>%
   left_join(EHA) %>% unique() -> GRAND_TO_EIA
 
@@ -129,6 +128,7 @@ sim_with_starfit %>% select(EIA_ID, GRAND_ID, nameplate, plant) %>%
                      params[['NORlo_beta']],
                      params[['NORlo_max']],
                      params[['NORlo_min']]),
+
       # give the harmonic a name...
       target_name = 'NORlo'
     ) -> NOR_lower_bound
@@ -176,7 +176,6 @@ sim_with_starfit %>% select(EIA_ID, GRAND_ID, nameplate, plant) %>%
       params$Release_p2,
       params$Release_c
     )
-
 
 
     for (t in 1:length(i)){
@@ -299,141 +298,132 @@ optimize_energy_factor <-
         MW = MWh / 168,
         nameplate = plant_nameplate)
     )
-    }
+  }
 
 
-  grand_sims %>% map_dfr(optimize_energy_factor) ->
-    weekly_energy_STARFIT_cases
-  
-  weekly_energy_STARFIT_cases = weekly_energy_STARFIT_cases %>%
-    mutate(p_avg = MW)
-  
-  ## non-STARFIT cases.
-  ## optimize both spill limit (between 0.75 and 1.0 of flows) AND release to energy factor.
-  
-  EIA_IDs_non_STARFIT <- all_plants[which(!all_plants %in% unique(weekly_energy_STARFIT_cases$EIA_ID))]
-  
-  EIA_IDs_non_STARFIT %>% 
-  map_dfr(function(EIA_ID){
+grand_sims %>% map_dfr(optimize_energy_factor) ->
+  weekly_energy_STARFIT_cases
 
-    message(EIA_ID)
+weekly_energy_STARFIT_cases = weekly_energy_STARFIT_cases %>%
+  mutate(p_avg = MW)
 
-    all_inflows %>% select(date, inflow_cumecs = one_of(as.character(EIA_ID))) ->
-      daily_inflow
+## non-STARFIT cases.
+## optimize both spill limit (between 0.75 and 1.0 of flows) AND release to energy factor.
 
-    nameplate %>% filter(EIA_ID == !!EIA_ID) %>%
-      .[['nameplate']] -> plant_nameplate
+EIA_IDs_non_STARFIT <- all_plants[which(!all_plants %in% unique(weekly_energy_STARFIT_cases$EIA_ID))]
 
+EIA_IDs_non_STARFIT %>% 
+map_dfr(function(EIA_ID){
 
-    get_multiplier_and_spill_factor <- function(multiplier_and_spill_quantile){
+  message(EIA_ID)
 
-      daily_inflow %>%
-        mutate(spill_cumecs = inflow_cumecs - quantile(inflow_cumecs, multiplier_and_spill_quantile[2]),
-               spill_cumecs = if_else(spill_cumecs < 0, 0, spill_cumecs),
-               release_cumecs = inflow_cumecs - spill_cumecs) %>%
-        mutate(epiweek = as.numeric(substr(date2week(date, week_start = 'Tuesday'), 7,8)), # set week definition (start day)
-               year = year(date),
-               month = month(date),
-               dow = weekdays(date)) %>%
-        mutate(year = ifelse(epiweek > 50 & month == 1, year - 1, year)) %>%
-        mutate(year = ifelse(epiweek == 1 & month == 12, year + 1, year)) %>%
-        group_by(epiweek, year) %>%
-        mutate(week_commencing = min(date)) %>%
-        mutate(week_ending = max(date) + days(1),
-               nday = n()) %>%
-        filter(nday == 7) %>% # only keep complete weeks
-        filter(year(week_commencing) >1998,
-               year(week_ending) < 2020) %>%
-        mutate(inflow_MCM = inflow_cumecs * 60 * 60 * 24 * 1e-6,
-               release_MCM = release_cumecs * 60 * 60 * 24 * 1e-6,
-               spill_MCM = spill_cumecs * 60 * 60 * 24 * 1e-6) %>%
-        group_by(week_commencing, epiweek) %>%
-        summarise(inflow = sum(inflow_MCM),
-                  release = sum(release_MCM),
-                  spill = sum(spill_MCM),
-                  .groups = 'drop') -> weekly_inflow_and_release
+  all_inflows %>% select(date, inflow_cumecs = one_of(as.character(EIA_ID))) ->
+    daily_inflow
 
-      annual_netgen_all_plants %>%
-        filter(EIA_ID == !!EIA_ID) %>% select(-EIA_ID) -> netgen
-
-      weekly_inflow_and_release %>%
-        mutate(year = year(week_commencing),
-               gen = multiplier_and_spill_quantile[1] * release) %>%
-        mutate(gen = if_else(gen > (plant_nameplate * 168), plant_nameplate * 168, gen)) %>%
-        group_by(year) %>% summarise(gen = sum(gen)) %>%
-        left_join(netgen, by = 'year') %>%
-        filter(!is.na(netgen_MWh)) -> cols_to_optimize
-
-      computed_gen <- cols_to_optimize[['gen']]
-      gen <- cols_to_optimize[['netgen_MWh']]
-
-      hydroGOF::rmse(computed_gen, gen)
+  nameplate %>% filter(EIA_ID == !!EIA_ID) %>%
+    .[['nameplate']] -> plant_nameplate
 
 
-    }
+  get_multiplier_and_spill_factor <- function(multiplier_and_spill_quantile){
 
-    nloptr::nloptr(x0 = c(0, 0.8),
-                   eval_f = get_multiplier_and_spill_factor,
-                   lb = c(0, 0.8),
-                   ub = c(Inf, 1),
-                   opts = list('algorithm' = 'NLOPT_LN_BOBYQA',
-                               'xtol_rel'=1.0e-8)) -> opt_spill_and_mult
+    daily_inflow %>%
+      mutate(spill_cumecs = inflow_cumecs - quantile(inflow_cumecs, multiplier_and_spill_quantile[2]),
+             spill_cumecs = if_else(spill_cumecs < 0, 0, spill_cumecs),
+             release_cumecs = inflow_cumecs - spill_cumecs) %>%
+      mutate(epiweek = as.numeric(substr(date2week(date, week_start = 'Tuesday'), 7,8)), # set week definition (start day)
+             year = year(date),
+             month = month(date),
+             dow = weekdays(date)) %>%
+      mutate(year = ifelse(epiweek > 50 & month == 1, year - 1, year)) %>%
+      mutate(year = ifelse(epiweek == 1 & month == 12, year + 1, year)) %>%
+      group_by(epiweek, year) %>%
+      mutate(week_commencing = min(date)) %>%
+      mutate(week_ending = max(date) + days(1),
+             nday = n()) %>%
+      filter(nday == 7) %>% # only keep complete weeks
+      filter(year(week_commencing) >1998,
+             year(week_ending) < 2020) %>%
+      mutate(inflow_MCM = inflow_cumecs * 60 * 60 * 24 * 1e-6,
+             release_MCM = release_cumecs * 60 * 60 * 24 * 1e-6,
+             spill_MCM = spill_cumecs * 60 * 60 * 24 * 1e-6) %>%
+      group_by(week_commencing, epiweek) %>%
+      summarise(inflow = sum(inflow_MCM),
+                release = sum(release_MCM),
+                spill = sum(spill_MCM),
+                .groups = 'drop') -> weekly_inflow_and_release
+
+    annual_netgen_all_plants %>%
+      filter(EIA_ID == !!EIA_ID) %>% select(-EIA_ID) -> netgen
+
+    weekly_inflow_and_release %>%
+      mutate(year = year(week_commencing),
+             gen = multiplier_and_spill_quantile[1] * release) %>%
+      mutate(gen = if_else(gen > (plant_nameplate * 168), plant_nameplate * 168, gen)) %>%
+      group_by(year) %>% summarise(gen = sum(gen)) %>%
+      left_join(netgen, by = 'year') %>%
+      filter(!is.na(netgen_MWh)) -> cols_to_optimize
+
+    computed_gen <- cols_to_optimize[['gen']]
+    gen <- cols_to_optimize[['netgen_MWh']]
+
+    hydroGOF::rmse(computed_gen, gen)
 
 
-    opt_spill_and_mult$solution[1] -> multiplier
-    opt_spill_and_mult$solution[2] -> spill_quantile
+  }
 
-    return(
+  nloptr::nloptr(x0 = c(0, 0.8),
+                 eval_f = get_multiplier_and_spill_factor,
+                 lb = c(0, 0.8),
+                 ub = c(Inf, 1),
+                 opts = list('algorithm' = 'NLOPT_LN_BOBYQA',
+                             'xtol_rel'=1.0e-8)) -> opt_spill_and_mult
 
-      daily_inflow %>%
-        mutate(spill_cumecs = inflow_cumecs - quantile(inflow_cumecs, spill_quantile),
-               spill_cumecs = if_else(spill_cumecs < 0, 0, spill_cumecs),
-               release_cumecs = inflow_cumecs - spill_cumecs) %>%
-        
-        mutate(epiweek = as.numeric(substr(date2week(date, week_start = 'Tuesday'), 7,8)), # set week definition (start day)
-               year = year(date),
-               month = month(date),
-               dow = weekdays(date)) %>%
-        mutate(year = ifelse(epiweek > 50 & month == 1, year - 1, year)) %>%
-        mutate(year = ifelse(epiweek == 1 & month == 12, year + 1, year)) %>%
-        group_by(epiweek, year) %>%
-        mutate(week_commencing = min(date)) %>%
-        mutate(week_ending = max(date) + days(1),
-               nday = n()) %>%
-        filter(nday == 7) %>% # only keep complete weeks
-        filter(year(week_commencing) >1998,
-               year(week_ending) < 2020) %>%
-        mutate(inflow_MCM = inflow_cumecs * 60 * 60 * 24 * 1e-6,
-               release_MCM = release_cumecs * 60 * 60 * 24 * 1e-6,
-               spill_MCM = spill_cumecs * 60 * 60 * 24 * 1e-6) %>%
-        group_by(week_commencing) %>%
-        summarise(inflow = sum(inflow_MCM),
-                  release = sum(release_MCM),
-                  spill = sum(spill_MCM),
-                  .groups = 'drop') %>%
-        mutate(MWh = release * multiplier,
-               MWh = if_else(MWh > plant_nameplate * 168, plant_nameplate * 168, MWh),
-               MW = MWh / 168,
-               nameplate = plant_nameplate,
-               EIA_ID = !!EIA_ID) %>%
-        mutate(MWh_per_MCM_release = multiplier,
-               spill_quantile = !!spill_quantile) %>%
-        select(EIA_ID, week_commencing, inflow, release, spill, MWh_per_MCM_release, spill_quantile,MWh, p_avg = MW, nameplate)
+
+  opt_spill_and_mult$solution[1] -> multiplier
+  opt_spill_and_mult$solution[2] -> spill_quantile
+
+  return(
+
+    daily_inflow %>%
+      mutate(spill_cumecs = inflow_cumecs - quantile(inflow_cumecs, spill_quantile),
+             spill_cumecs = if_else(spill_cumecs < 0, 0, spill_cumecs),
+             release_cumecs = inflow_cumecs - spill_cumecs) %>%
+      
+      mutate(epiweek = as.numeric(substr(date2week(date, week_start = 'Tuesday'), 7,8)), # set week definition (start day)
+             year = year(date),
+             month = month(date),
+             dow = weekdays(date)) %>%
+      mutate(year = ifelse(epiweek > 50 & month == 1, year - 1, year)) %>%
+      mutate(year = ifelse(epiweek == 1 & month == 12, year + 1, year)) %>%
+      group_by(epiweek, year) %>%
+      mutate(week_commencing = min(date)) %>%
+      mutate(week_ending = max(date) + days(1),
+             nday = n()) %>%
+      filter(nday == 7) %>% # only keep complete weeks
+      filter(year(week_commencing) >1998,
+             year(week_ending) < 2020) %>%
+      mutate(inflow_MCM = inflow_cumecs * 60 * 60 * 24 * 1e-6,
+             release_MCM = release_cumecs * 60 * 60 * 24 * 1e-6,
+             spill_MCM = spill_cumecs * 60 * 60 * 24 * 1e-6) %>%
+      group_by(week_commencing) %>%
+      summarise(inflow = sum(inflow_MCM),
+                release = sum(release_MCM),
+                spill = sum(spill_MCM),
+                .groups = 'drop') %>%
+      mutate(MWh = release * multiplier,
+             MWh = if_else(MWh > plant_nameplate * 168, plant_nameplate * 168, MWh),
+             MW = MWh / 168,
+             nameplate = plant_nameplate,
+             EIA_ID = !!EIA_ID) %>%
+      mutate(MWh_per_MCM_release = multiplier,
+             spill_quantile = !!spill_quantile) %>%
+      select(EIA_ID, week_commencing, inflow, release, spill, MWh_per_MCM_release, spill_quantile,MWh, p_avg = MW, nameplate)
 
     )
     }
-    ) -> weekly_energy_RoR_cases
+  ) -> weekly_energy_RoR_cases
 
-# plot ROR
-weekly_energy_RoR_cases %>%
-  #filter(nameplate < p_avg)
-  filter(EIA_ID == 3075) %>% #filter(spill > 0)
-  mutate(release_ = MWh / MWh_per_MCM_release) %>%
-  #mutate(rel_diff = round((release_ - release), 1)) %>% arrange(-rel_diff)
-  ggplot(aes(week_commencing, p_avg)) +
-  geom_line() +
-  facet_wrap(~year(week_commencing), scales = 'free_x')
-
+# merge STARFIT and non-STARFIT tables
 bind_rows(
   weekly_energy_STARFIT_cases %>%
     mutate(type = 'STARFIT') %>% select(-plant),
@@ -441,19 +431,6 @@ bind_rows(
 ) ->
   all_targets
 
-# summary plot - plants aggregated
-all_targets %>%
-  group_by(year = year(week_commencing), EIA_ID) %>%
-  summarise(MWh = sum(MWh), .groups = 'drop') %>%
-  left_join(annual_netgen_all_plants) %>%
-  ggplot(aes(year, MWh)) + geom_line() +
-  geom_line(aes(y = netgen_MWh), col = 'red') +
-  facet_wrap(~EIA_ID, scales = 'free_y') +
-  expand_limits(y=0)
-
-test = all_targets %>%
-  group_by(EIA_ID) %>%
-  summarise(date_min = min(week_commencing), date_max = max(week_commencing))
 
 # write out data
 all_targets = all_targets %>%
@@ -476,3 +453,61 @@ ewf_tbl = all_targets %>%
   distinct()
 
 write_csv(ewf_tbl, 'data/input_data/starfit_reservoirtargets/plant_energy-water-fact_tbl.csv')
+
+# data with storage targets for ror
+
+all_targets %>%
+  mutate(year = year(week_commencing)) %>%
+  filter(type == 'RoR/small storage', year >= 2000) ->
+  bcs_ror
+
+read_csv('data/input_data/hydrosource/HESC_v1.csv') %>%
+  select(nidid = DamID, MaxVol, MinVol, MaxVolSrc) -> HESC_vols
+
+read_csv('data/input_data/hydrosource/HydroSource_HYC.csv') %>%
+  select(PLANT = plant, EIA_ID, eha_ptid = EHA_ID, CH_MW) %>%
+  filter(EIA_ID %in% (bcs_ror[['EIA_ID']] %>% unique())) %>%
+  left_join(read_csv('data/input_data/hydrosource/HILARRI_v1_1_Public.csv') %>%
+              select(eha_ptid, nidid)) %>%
+  distinct() %>%
+  left_join(HESC_vols) -> ror_plant_data
+
+ror_maxvol = ror_plant_data %>%
+  dplyr::select(EIA_ID, MaxVol)
+
+# compute storage targets for ROR - assume full storage at start of simulation
+boundary_conditions_ror = boundary_conditions %>%
+  dplyr::filter(type == 'RoR/small storage') %>%
+  left_join(ror_maxvol) %>%
+  dplyr::filter(!is.na(MaxVol))
+
+eia_id_list = unique(boundary_conditions_ror$EIA_ID)
+week_list = sort(unique(boundary_conditions_ror$week_commencing))
+boundary_conditions_ror_s = tibble()
+for(f in 1:length(eia_id_list)){
+  eia_id_sel = eia_id_list[f]
+  boundary_conditions_ror_fl = boundary_conditions_ror %>%
+    dplyr::filter(EIA_ID == eia_id_sel)
+  
+  for(w in 1:length(week_list)){
+    week_sel = week_list[w]
+    
+    # storage[t-1] - (MWh / MWh_per_MCM_release) + inflow
+    # compute 'storage target' for ROR
+    if(week_sel == week_list[1]){
+      storage_p = boundary_conditions_ror_fl %>%
+        filter(week_commencing == week_sel) %>% pull(MaxVol) * 0.75
+    } else {
+      storage_p = boundary_conditions_ror_fl %>%
+        filter(week_commencing == week_sel_p) %>% pull(storage)
+    }
+    storage_max = pull(dplyr::filter(boundary_conditions_ror_fl, week_commencing == week_sel), MaxVol)
+    storage_delta = pull(dplyr::filter(boundary_conditions_ror_fl, week_commencing == week_sel), MWh) /
+      pull(dplyr::filter(boundary_conditions_ror_fl, week_commencing == week_sel), MWh_per_MCM_release)
+    storage_t = storage_p - storage_delta + pull(dplyr::filter(boundary_conditions_ror_fl, week_commencing == week_sel), inflow)
+    boundary_conditions_ror_fl$storage[w] = min(storage_t, storage_max)
+  }
+  boundary_conditions_ror_s = bind_rows(boundary_conditions_ror_fl, boundary_conditions_ror_s)
+}
+
+write_csv(boundary_conditions_ror_s, 'data/input_data/starfit_reservoirtargets/2000_2019_weekly_GOWEST_hydro_inputs_rorstoragetarget.csv')
