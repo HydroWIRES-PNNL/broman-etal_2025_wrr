@@ -29,7 +29,7 @@ The experiment files (resulting from the analysis scripts listed below) are are 
 
 |       Dataset       |                  DOI                   |
 |:-------------------:|:-----------------------------------------------------------------------------:|
-| FIScH Simulations |  XXX |
+| FIScH Simulations |  https://doi.org/10.5281/zenodo.14052614 |
 
 
 ## Contributing modeling software
@@ -37,7 +37,7 @@ The experiment files (resulting from the analysis scripts listed below) are are 
 |:--------:|:-------:|:--------------------------------:|:---:|
 | mosartwmpy |  v0.4.4  | https://github.com/IMMM-SFA/mosartwmpy | NA |
 | FIScH |  v0.4.0  | https://github.com/HydroWIRES-PNNL/fisch | NA |
-| GO-WEST |  XX   | https://github.com/romulus97/IM3-GO-WEST | XX |
+| GO-WEST |  XX   | https://github.com/romulus97/IM3-GO-WEST | NA |
 | hydrofixr | NA | https://github.com/pnnl/hydrofixr/tree/master | NA|
 | starfit | v0.1.0 | https://github.com/IMMM-SFA/starfit | NA |
 
