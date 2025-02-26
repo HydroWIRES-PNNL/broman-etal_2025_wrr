@@ -1,2 +1,4 @@
 **/.DS_Store
 data/output_data/fisch/*.csv
+.Rhistory
+data/input_data/d3_fisch_simulations/*

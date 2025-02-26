@@ -3,9 +3,9 @@
 **Title:** How Hydropower Operations Mitigate Flow Forecast Uncertainties to Maintain Grid Services in the Western U.S.
 
 **Authors:**
-Daniel Broman*, Nathalie Voisin, Nathalie Voisin, Scott Steinschneider, Jordan Kern, Sungwook Wi, and Henry Ssembatya
+Daniel Broman*, Nathalie Voisin*, Scott Steinschneider, Jordan Kern, Henry Ssembatya, Sean Turner, Sungwook Wi, and Cameron Bracken
 
-\* corresponding author: daniel.broman@pnnl.gov
+\* corresponding authors: daniel.broman@pnnl.gov and nathalie.voisin@pnnl.gov
 
 ![Annual Hydropower Revenue Differences When Scheduling With Different Inflow Forecast](https://github.com/HydroWIRES-PNNL/broman-etal_2025_wrr/blob/main/figures/figure7_annualrevdist.png)
 
@@ -29,7 +29,7 @@ The experiment files (resulting from the analysis scripts listed below) are are 
 
 |       Dataset       |                  DOI                   |
 |:-------------------:|:-----------------------------------------------------------------------------:|
-| FIScH Simulations |  https://doi.org/10.5281/zenodo.14052614 |
+| FIScH Simulations |  XXX |
 
 
 ## Contributing modeling software
@@ -58,14 +58,16 @@ To complete the analysis end to end, run the following scripts:
 | Data analysis | 4a_run_fisch_ror.R  | Runs hydropower scheduler for run-of-river hydropower facilities; code runs one facility at a time for all three forecast types |
 | Data analysis | 4b_run_fisch_storage.R  | Runs hydropower scheduler for storage hydropower facilities; code runs one facility at a time for all three forecast types |
 
+Note: FIScH is available from its GitHub repository and a copy of v0.4.0 used in this study is provided in the `scripts` directory
 
 ## Reproduce my figures
-Use the following scripts to reproduce the figures in this publication. Data analysis is performed in these scripts using data from FIScH.
+Use the following scripts to reproduce the figures in this publication. Data analysis using FIScH simulations is done in the
+`f5-7_plot_revenue_change.R` script.
 
 | Figure Number |                Script Name                 |                                  Description                                   | 
 |:--------------:|:------------------------------------------:|:------------------------------------------------------------------------------:|
 | 1 | NA | Overview of modeling experiment design |
-| 2 | NA | Flow chart showing data flow through each model |
-| 3 | f3_plot_hydropower_facility_map.R | Map of hydropower facilities used in experiment by nameplate capacity and operation type |
-| 4 | NA | Topology of full 10,000 node GO-WEST model and reduced 100 node model provided by NC State University |
-| 5-7 | f4-7_plot_revenue_change.R | Revenue difference for revenue produced by hydropower schedules using different inflow forecasts |
+| 2 | f2_plot_hydropower_facility_map.R | Map of hydropower facilities used in experiment by nameplate capacity and operation type |
+| 3 | f3_plot_go_node_map.R | Topology of full 10,000 node GO-WEST model and reduced 100 node model |
+| 4 | NA | Example inflow forecast timeseries provided by Cornell University |
+| 5-7 | f5-7_plot_revenue_change.R | Revenue difference for revenue produced by hydropower schedules using different inflow forecasts |
