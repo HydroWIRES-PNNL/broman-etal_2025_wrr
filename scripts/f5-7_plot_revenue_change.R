@@ -18,6 +18,7 @@ extrafont::loadfonts()
 library(ggfx)
 library(usmap)
 library(ggrepel)
+library(patchwork)
 
 water_year = function(x, numeric = FALSE){
   x = as.POSIXlt(x)
@@ -118,7 +119,12 @@ dp_dat_total = dp_dat_stat %>%
 dp_dat_total_stat = dp_dat_total %>%
   spread(forecast, benefit_revenue) %>%
   mutate(pers_diff = (persistence - perfect) / perfect * 100,
-         synt_diff = (synthetic - perfect) / perfect * 100)
+         synt_diff = (synthetic - perfect) / perfect * 100,
+         chg = (synthetic - perfect) / (persistence - perfect),
+         synthetic - persistence) %>%
+  mutate(syntpers_diff = pers_diff - synt_diff)
+
+
 
 # id list of facilities in fisch sims
 dp_eia_id_list = unique(dp_dat_stat$EIA_ID)
@@ -196,6 +202,18 @@ ggplot(data = dp_dat_rev_bus_yr_plot) +
 
 ggsave('figures/figure7_annualrevdist.png', height = 6, width = 8, units = 'in')
 
+# quantile statistics for paper
+dp_dat_rev_bus_yr_quantile = dp_dat_rev_bus_yr_plot %>%
+  ungroup() %>%
+  mutate(quantile = 1:nrow(dp_dat_rev_bus_yr_plot) / nrow(dp_dat_rev_bus_yr_plot))
+
+dp_dat_rev_bus_30to90 = dp_dat_rev_bus_yr_quantile %>% filter(quantile >= 0.3, quantile < 0.9)
+
+range(dp_dat_rev_bus_30to90$pers_diff_pct) * 100
+
+dp_dat_rev_bus_90to100 = dp_dat_rev_bus_yr_quantile %>% 
+  dplyr::filter(quantile >= 0.9)
+
 # ----
 source_tbl = tibble(source = c('pers_diff_pct', 'synt_diff_pct'),
                     source_name = c('Persistence Optimized - Perfect Optimized',
@@ -214,15 +232,16 @@ dp_dat_rev_bus_box = dp_dat_rev_bus_yr %>%
   arrange(state_bus_ord)
 
 dp_dat_rev_bus_box$Name = factor(dp_dat_rev_bus_box$Name, levels = unique(dp_dat_rev_bus_box$Name))
+dp_dat_rev_bus_box$revenue_pct_label = dp_dat_rev_bus_box$revenue_pct * 100
 
 ggplot() +
   geom_hline(yintercept = 0, linetype = 2, 
              colour = 'gray20',
              alpha = 1,
              linewidth = 0.3) +
-  geom_boxplot(data = dp_dat_rev_bus_box, aes(x = Name, y = revenue_pct * 100, color = state_bus)) +
-  scale_y_continuous(limits = c(-0.03, 0.03), breaks = seq(from = -0.03, to = 0.03, by = 0.01), 
-                     labels = paste0(seq(from = -3, to = 3, by = 1), '%')) +
+  geom_boxplot(data = dp_dat_rev_bus_box, aes(x = Name, y = revenue_pct_label, color = state_bus)) +
+  scale_y_continuous(limits = c(-3, 3), breaks = round(seq(from = -3, to = 3, by = 0.5), 2), 
+                     labels = paste0(round(seq(from = -3, to = 3, by = 0.5), 2), '%')) +
   scale_color_manual(values = brewer.pal(10, 'Paired')) +
   facet_wrap(~source_name, scales = 'free', ncol = 1) +
   theme_bw() +
@@ -235,7 +254,7 @@ ggplot() +
         legend.title = element_blank()) +
   ggtitle('Total Revenue Difference')
 
-ggsave('figures/figure6_annrevboxplot.png', height = 8, width = 8)
+ggsave('figures/figure6_annrevboxplot-t.png', height = 8, width = 8)
 
 #-----------------
 # map of median revenue difference by Bus
@@ -245,7 +264,7 @@ wecc_sf = st_read('data/spatial/wecc_boundary.gpkg')
 # ---
 dp_dat_pp = dp_dat_rev_bus_box %>%
   group_by(Bus, source, source_name) %>%
-  dplyr::summarise(revenue_pct = median(revenue_pct))
+  dplyr::summarise(revenue_pct = as.numeric(quantile(revenue_pct, 0.5)))
 
 dp_dat_pp_map = go_nodes_100_hydro_tbl %>%
   left_join(dp_dat_pp) %>%
@@ -257,8 +276,8 @@ bus_highlight = dp_dat_pp_map %>%
   dplyr::filter(Name %in% c('PATTERSON 1 1', 'KLAMATH FALLS 1 1'))
 
 ggplot() +
-  with_shadow(geom_sf(data = wecc_shp, fill = '#ece6d9', color = NA), colour = '#cccccc') +
-  geom_sf(data = states_shp, fill = NA, color = '#f4f4f2', linewidth = 0.2) +
+  with_shadow(geom_sf(data = wecc_sf, fill = '#ece6d9', color = NA), colour = '#cccccc') +
+  geom_sf(data = states_sf, fill = NA, color = '#f4f4f2', linewidth = 0.2) +
   geom_point(data = dp_dat_pp_map, aes(x = lon_adj, y = lat_adj, size = cap_bin, fill = revenue_pct * 100), shape = 21) +
   geom_point(data = bus_highlight, aes(x = lon_adj, y = lat_adj, size = cap_bin), color = '#000000', fill = NA, shape = 21, stroke = 1.5) +
   geom_text_repel(data = dp_dat_pp_map, aes(x = lon_adj, y = lat_adj, label = paste0(round(revenue_pct * 100, 2), '%')),
@@ -280,3 +299,64 @@ ggplot() +
                                 title.hjust = 0.5))
 
 ggsave('figures/figure5_medianannrevmap.png', height = 8, width = 10)
+
+
+
+#-----------------
+# supplemental material revenue difference example figure
+
+#- compute monthly revenue and look for months with large revenue losses +/-
+
+dp_dat_stat_plant_mon = dp_dat_stat %>%
+  mutate(wyear = water_year(week_commencing), month = month(week_commencing)) %>%
+  dplyr::rename(eia_plant_id = EIA_ID) %>%
+  left_join(hydro_plant_tbl_fl)
+  group_by(Bus, eia_plant_id, forecast, wyear, month) %>%
+  dplyr::summarise(benefit_revenue = sum(benefit_revenue))
+
+hydro_node_tbl_jn = hydro_node_tbl %>%
+  dplyr::select(EIA_ID, plant, state, capacity) %>%
+  dplyr::rename(eia_plant_id = EIA_ID) %>%
+  mutate(plant_label = paste0(plant, ' [', capacity, 'MW]'))
+
+ex_rev = dp_dat_stat_plant_mon %>%
+  dplyr::filter(Bus == 'bus_23060', wyear == 2006) %>% #, month == 9) %>%
+  left_join(hydro_node_tbl_jn)
+
+ex_rev_tot = ex_rev %>%
+  group_by(week_commencing, forecast) %>%
+  dplyr::summarise(benefit_revenue = sum(benefit_revenue))
+
+p1 = ggplot() +
+  geom_line(data = ex_rev, aes(x = week_commencing, y = benefit_revenue, color = forecast)) +
+  facet_wrap(~plant_label, scales = 'free_x', ncol = 4) +
+  scale_color_manual(values = c('#648FFF', '#FFB000', '#DC2660'), name = '') +
+  theme_bw() +
+  xlab('') +
+  ylab('Revenue (dollars)') +
+  theme(legend.position = 'bottom',
+        text = element_text(family = 'Lato', size = 12),
+        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1),
+        strip.background = element_rect(fill = NA)) +
+  guides(color = 'none') +
+  ggtitle('Hayfork 1 1 Bus')
+
+p2 = ggplot() +
+  geom_line(data = ex_rev_tot, aes(x = week_commencing, y = benefit_revenue, color = forecast)) +
+  scale_color_manual(values = c('#648FFF', '#FFB000', '#DC2660'), name = '') +
+  theme_bw() +
+  xlab('') +
+  ylab('Revenue (dollars)') +
+  theme(legend.position = 'bottom',
+        text = element_text(family = 'Lato', size = 12),
+        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1),
+        strip.background = element_rect(fill = NA))
+
+combined_plot = (p1 / p2) + 
+  plot_layout(heights = c(4, 1))  # Adjust the height of the second plot
+
+print(combined_plot)
+
+ggsave('figures/figureS1_wyrevenueex.png', height = 10, width = 10)
+
+
