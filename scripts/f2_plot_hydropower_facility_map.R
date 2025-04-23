@@ -54,7 +54,7 @@ wecc_sf = st_read('data/spatial/wecc_boundary.gpkg')
 
 # hydropower facility map
 ggplot() +
-  with_shadow(geom_sf(data = wecc_shp, fill = '#ece6d9', color = NA), colour = '#cccccc') +
+  with_shadow(geom_sf(data = wecc_sf, fill = '#ece6d9', color = NA), colour = '#cccccc') +
   geom_sf(data = states_sf, fill = NA, color = '#f4f4f2', linewidth = 0.2) +
   geom_point(data = facility_set_other, aes(x = lon, y = lat), shape = 16, size = 0.5, color = 'gray30', alpha = 0.5) +
   geom_point(data = facility_set, aes(x = lon, y = lat, size = `Nameplate Capacity (MW)`, fill = Type), 
@@ -69,8 +69,8 @@ ggplot() +
   ) +
   guides(fill = guide_legend(title.position = 'top', title.hjust = 0.5),
          size = guide_legend(title.position = 'top', title.hjust = 0.5)
-  ) +
-  ggtitle('Western Interconnect Conventional Hydropower Facilities')
+  ) # +
+  # ggtitle('Western Interconnection Conventional Hydropower Facilities')
 
 ggsave('figures/figure2_hydropowerfacilitymap.png', height = 8, width = 6)
 

@@ -2,3 +2,7 @@
 data/output_data/fisch/*.csv
 .Rhistory
 data/input_data/d3_fisch_simulations/*
+.Rproj.user
+broman-etal_2025_wrr.Rproj
+.Rhistory
+scripts/test_revenue_plot.R
