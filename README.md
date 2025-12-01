@@ -57,12 +57,13 @@ To complete the analysis end to end, run the following scripts:
 | Data preparation | 3_map_lmps_to_facilities.R  | Maps GO-WEST locational marginal prices (LMPs) provided by bus (node) to each hydropower facility |
 | Data analysis | 4a_run_fisch_ror.R  | Runs hydropower scheduler for run-of-river hydropower facilities; code runs one facility at a time for all three forecast types |
 | Data analysis | 4b_run_fisch_storage.R  | Runs hydropower scheduler for storage hydropower facilities; code runs one facility at a time for all three forecast types |
+| Data analysis | 4c_run_fisch_storage_fulloutput.R  | Runs hydropower scheduler for storage hydropower facilities and saves out full output (intermediate schedules throughout the week); code runs one facility at a time for all three forecast types |
 
 Note: FIScH is available from its GitHub repository and a copy of v0.4.0 used in this study is provided in the `scripts` directory
 
 ## Reproduce my figures
 Use the following scripts to reproduce the figures in this publication. Data analysis using FIScH simulations is done in the
-`f5-7_plot_revenue_change.R` script.
+`f6-9_plot_revenue_change.R` script.
 
 | Figure Number |                Script Name                 |                                  Description                                   | 
 |:--------------:|:------------------------------------------:|:------------------------------------------------------------------------------:|
@@ -70,4 +71,6 @@ Use the following scripts to reproduce the figures in this publication. Data ana
 | 2 | f2_plot_hydropower_facility_map.R | Map of hydropower facilities used in experiment by nameplate capacity and operation type |
 | 3 | f3_plot_go_node_map.R | Topology of full 10,000 node GO-WEST model and reduced 100 node model |
 | 4 | NA | Example inflow forecast timeseries provided by Cornell University |
-| 5-7 | f5-7_plot_revenue_change.R | Revenue difference for revenue produced by hydropower schedules using different inflow forecasts |
+| 5 | NA | Inflow forecast skill |
+| 6 | f6_schedule_evolution.R | Evolution of schedules optimized by FIScH for one week and one location to demonstrate how FIScH works |
+| 7-9 | f7-9_plot_revenue_change.R | Revenue difference for revenue produced by hydropower schedules using different inflow forecasts |

@@ -11,9 +11,14 @@ library(RColorBrewer)
 library(scales)
 library(gridExtra)
 library(extrafont)
+library(ggrepel)
+library(ggfx)
 library(usmap)
 library(sf)
 extrafont::loadfonts()
+
+wd = '' # repo top directory
+setwd(wd)
 
 # read in EHA
 eha2021_tbl = read_csv('data/input_data/hydrosource/HydroSource_HYC.csv')
@@ -50,12 +55,16 @@ facility_set = facility_set %>%
 
 # spatial layers
 states_sf = st_read('data/spatial/wecc_boundary_states.gpkg')
+states_labels_sf = st_read('/Users/brom374/Downloads/wecc_states_labels.gpkg')
 wecc_sf = st_read('data/spatial/wecc_boundary.gpkg')
 
 # hydropower facility map
 ggplot() +
   with_shadow(geom_sf(data = wecc_sf, fill = '#ece6d9', color = NA), colour = '#cccccc') +
   geom_sf(data = states_sf, fill = NA, color = '#f4f4f2', linewidth = 0.2) +
+  geom_text_repel(data = states_labels_sf, 
+                  aes(y = latitude, x = longitude, label = State_Abb),
+                  color = 'gray60', alpha = 0.5) +
   geom_point(data = facility_set_other, aes(x = lon, y = lat), shape = 16, size = 0.5, color = 'gray30', alpha = 0.5) +
   geom_point(data = facility_set, aes(x = lon, y = lat, size = `Nameplate Capacity (MW)`, fill = Type), 
              shape = 21, alpha = 0.6) +
@@ -73,4 +82,3 @@ ggplot() +
   # ggtitle('Western Interconnection Conventional Hydropower Facilities')
 
 ggsave('figures/figure2_hydropowerfacilitymap.png', height = 8, width = 6)
-

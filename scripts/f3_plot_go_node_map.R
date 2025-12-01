@@ -19,7 +19,7 @@ library(ggfx)
 library(usmap)
 library(ggrepel)
 
-wd = '/Users/brom374/Library/CloudStorage/OneDrive-PNNL/Documents/Projects/git/broman-etal_2025_wrr'
+wd = '' # repo top directory
 setwd(wd)
 
 # GO-WEST nodes representative locations for plotting
@@ -41,19 +41,23 @@ edges_sf = edges_with_coords %>%
   st_sf(crs = 4326)
 
 #-----------------
-# map of median revenue difference by Bus
 states_sf = st_read('data/spatial/wecc_boundary_states.gpkg')
 wecc_sf = st_read('data/spatial/wecc_boundary.gpkg')
 transmission_sf = st_read('data/spatial/wecc_transmission.gpkg')
 
 # GO-WEST 100 node map
+
+# label table - keep just Klamath Falls and Patterson buses
+go_nodes_fl = go_nodes_100_tbl %>%
+  dplyr::filter(Name %in% c('KLAMATH FALLS 1 1', 'PATTERSON 1 1'))
+
 gg1 = ggplot() +
-  with_shadow(geom_sf(data = wecc_shp, fill = '#ece6d9', color = NA), colour = '#cccccc') +
+  with_shadow(geom_sf(data = wecc_sf, fill = '#ece6d9', color = NA), colour = '#cccccc') +
   geom_sf(data = edges_sf, color = '#D0A5E9', size = 0.5, alpha = 0.7) +
   geom_sf(data = states_sf, fill = NA, color = '#f4f4f2', linewidth = 0.2) +
   geom_point(data = go_nodes_100_tbl, aes(x = lon_adj, y = lat_adj), shape = 15, color = '#EAA74A') +
-  geom_text_repel(data = go_nodes_100_tbl, aes(x = lon_adj, y = lat_adj, label = str_to_title(Name)),
-                  size = 2.5, family = 'Lato', max.overlaps = 20, box.padding = 0.25) +
+  geom_text_repel(data = go_nodes_fl, aes(x = lon_adj, y = lat_adj, label = str_to_title(Name)),
+                  size = 4, family = 'Lato', max.overlaps = 20, box.padding = 0.25) +
   theme_bw() +
   xlab('') +
   ylab('') +
@@ -78,3 +82,21 @@ gg2 = ggplot() +
 ggcomb = gridExtra::grid.arrange(gg2, gg1, ncol = 2)
 
 ggsave('figures/figure3_gowestmap.png', ggcomb, height = 7, width = 12)
+
+#-----------------
+# detailed map of all buses with labels - SI figure
+ggplot() +
+  with_shadow(geom_sf(data = wecc_sf, fill = '#ece6d9', color = NA), colour = '#cccccc') +
+  geom_sf(data = edges_sf, color = '#D0A5E9', size = 0.5, alpha = 0.7) +
+  geom_sf(data = states_sf, fill = NA, color = '#f4f4f2', linewidth = 0.2) +
+  geom_point(data = go_nodes_100_tbl, aes(x = lon_adj, y = lat_adj), shape = 15, color = '#EAA74A') +
+  geom_text_repel(data = go_nodes_100_tbl, aes(x = lon_adj, y = lat_adj, label = str_to_title(Name)),
+                  size = 4, family = 'Lato', max.overlaps = 20, box.padding = 0.25) +
+  theme_bw() +
+  xlab('') +
+  ylab('') +
+  theme(text = element_text(family = 'Lato', size = 12),
+  ) +
+  ggtitle('GO-WEST 100 Nodes')
+
+ggsave('figures/figuresi1_gowestmap_100node.png', height = 20, width = 20)
