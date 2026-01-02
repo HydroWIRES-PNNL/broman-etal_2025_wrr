@@ -3,7 +3,7 @@
 **Title:** How Hydropower Operations Mitigate Flow Forecast Uncertainties to Maintain Grid Services in the Western U.S.
 
 **Authors:**
-Daniel Broman*, Nathalie Voisin*, Scott Steinschneider, Jordan Kern, Henry Ssembatya, Sean Turner, Sungwook Wi, and Cameron Bracken
+Daniel Broman*, Nathalie Voisin*, Scott Steinschneider, Jordan Kern, Henry Ssembatya, and Sungwook Wi
 
 \* corresponding authors: daniel.broman@pnnl.gov and nathalie.voisin@pnnl.gov
 
