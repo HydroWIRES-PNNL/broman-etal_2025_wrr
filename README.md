@@ -1,13 +1,13 @@
-# broman-etal_2025_wrr
+# broman-etal_2026_wrr
 
-**Title:** How Hydropower Operations Mitigate Flow Forecast Uncertainties to Maintain Grid Services in the Western U.S.
+**Title:** How hydropower operations mitigate flow forecast uncertainties to maintain grid services in the Western U.S.
 
 **Authors:**
 Daniel Broman*, Nathalie Voisin*, Scott Steinschneider, Jordan Kern, Henry Ssembatya, and Sungwook Wi
 
 \* corresponding authors: daniel.broman@pnnl.gov and nathalie.voisin@pnnl.gov
 
-![Annual Hydropower Revenue Differences When Scheduling With Different Inflow Forecast](https://github.com/HydroWIRES-PNNL/broman-etal_2025_wrr/blob/main/figures/figure7_annualrevdist.png)
+![Annual Hydropower Revenue Differences When Scheduling With Different Inflow Forecast](https://github.com/HydroWIRES-PNNL/broman-etal_2026_wrr/blob/main/figures/figure9_annualrevdist.png)
 
 ## Abstract
 
@@ -15,7 +15,7 @@ Hydropower facilities represent a key electricity generating resource in the U.S
 
 ## Journal reference
 
-[to be filled in upon publication]
+Broman, D., Voisin, N., Steinschneider, S., Kern, J., Ssembatya, H., & Wi, S. (2026). How hydropower operations mitigate flow forecast uncertainties to maintain grid services in the Western U.S. Water Resources Research, 62, e2025WR040943. https://doi.org/10.1029/2025WR040943
 
 ## Data references
 ### Input data
@@ -36,7 +36,7 @@ The experiment files (resulting from the analysis scripts listed below) are are 
 |  Model   | Version |         Repository Link          | DOI |
 |:--------:|:-------:|:--------------------------------:|:---:|
 | mosartwmpy |  v0.4.4  | https://github.com/IMMM-SFA/mosartwmpy | NA |
-| FIScH |  v0.4.0  | https://github.com/HydroWIRES-PNNL/fisch | NA |
+| FIScH |  v0.4.0  | https://github.com/HydroWIRES-PNNL/fisch | https://doi.org/10.5281/zenodo.15271899 |
 | GO-WEST |  XX   | https://github.com/romulus97/IM3-GO-WEST | NA |
 | hydrofixr | NA | https://github.com/pnnl/hydrofixr/tree/master | NA|
 | starfit | v0.1.0 | https://github.com/IMMM-SFA/starfit | NA |
