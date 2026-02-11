@@ -71,6 +71,6 @@ Use the following scripts to reproduce the figures in this publication. Data ana
 | 2 | f2_plot_hydropower_facility_map.R | Map of hydropower facilities used in experiment by nameplate capacity and operation type |
 | 3 | f3_plot_go_node_map.R | Topology of full 10,000 node GO-WEST model and reduced 100 node model |
 | 4 | NA | Example inflow forecast timeseries provided by Cornell University |
-| 5 | NA | Inflow forecast skill |
+| 5 | f5_compute_forecast_skills.R | Inflow forecast skill |
 | 6 | f6_schedule_evolution.R | Evolution of schedules optimized by FIScH for one week and one location to demonstrate how FIScH works |
 | 7-9 | f7-9_plot_revenue_change.R | Revenue difference for revenue produced by hydropower schedules using different inflow forecasts |
